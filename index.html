@@ -1,559 +1,726 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>🎄 Christmas Movie Zoom Quiz 🎄</title>
-
-<style>
-  body{
-    margin:0;
-    font-family: system-ui, Arial, sans-serif;
-    background: radial-gradient(circle at top, #0a3d62, #02101f);
-    color:#fff;
-    text-align:center;
-    min-height:100vh;
-  }
-  .container{
-    max-width: 980px;
-    margin: 0 auto;
-    padding: 16px;
-  }
-  h1{
-    font-size: clamp(34px, 6vw, 56px);
-    margin: 12px 0 10px;
-    color:#FFD700;
-    text-shadow: 0 0 18px #ff0000;
-  }
-  #intro, #results{
-    background: rgba(0,0,0,.60);
-    border: 3px solid #FFD700;
-    border-radius: 20px;
-    padding: 22px 18px;
-    box-shadow: 0 0 24px rgba(255,0,0,.25);
-  }
-  #intro p{
-    font-size: clamp(18px, 2.7vw, 22px);
-    line-height: 1.35;
-    margin: 10px 0;
-  }
-  #start-btn{
-    font-size: clamp(20px, 4vw, 28px);
-    padding: 18px 28px;
-    border-radius: 18px;
-    border: 4px solid #FFD700;
-    background: linear-gradient(#2ecc71,#1c7c31);
-    color:#fff;
-    cursor:pointer;
-    width: min(420px, 92%);
-  }
-
-  #quiz.hidden, #intro.hidden, #results.hidden { display:none; }
-
-  .image-container{
-    position: relative;
-    width: min(92vw, 760px);
-    aspect-ratio: 4 / 3;
-    margin: 14px auto 10px;
-    overflow: hidden;
-    border: 8px solid #FFD700;
-    border-radius: 20px;
-    background:#000;
-    box-shadow: 0 0 22px rgba(255,255,255,.18);
-  }
-  #movie-image{
-    position:absolute;
-    top:50%;
-    left:50%;
-    max-width: 175%;
-    max-height: 175%;
-    transform: translate(-50%, -50%) scale(10);
-    transition: transform 0.6s ease;
-    filter: grayscale(100%);
-  }
-  .color #movie-image{ filter:none; }
-
-  .hud{
-    display:flex;
-    gap:10px;
-    justify-content:center;
-    align-items:center;
-    flex-wrap:wrap;
-    margin: 8px 0 6px;
-  }
-  #zoom-btn{
-    padding: 12px 18px;
-    font-size: 18px;
-    border-radius: 14px;
-    border: 3px solid #FFD700;
-    background: linear-gradient(#3498db,#1f6ea6);
-    color:#fff;
-    cursor:pointer;
-    width: min(260px, 92%);
-  }
-  #zoom-btn:disabled{
-    opacity:.6;
-    cursor: default;
-  }
-  #score{
-    font-size: 18px;
-    padding: 10px 14px;
-    border-radius: 14px;
-    border: 3px solid #FFD700;
-    background: rgba(0,0,0,.5);
-    min-width: 220px;
-  }
-
-  .options{
-    width: min(92vw, 760px);
-    margin: 10px auto 0;
-    display:grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-  }
-  .option{
-    padding: 14px 12px;
-    font-size: 17px;
-    border-radius: 16px;
-    border: 3px solid #FFD700;
-    background: rgba(255,255,255,.95);
-    color:#000;
-    cursor:pointer;
-    transition: transform .08s ease;
-  }
-  .option:active{ transform: scale(0.99); }
-  .option.correct{ background: linear-gradient(#2ecc71,#1c7c31); color:#fff; border-color:#2ecc71; }
-  .option.incorrect{ background: linear-gradient(#e74c3c,#9b2d23); color:#fff; border-color:#ff4444; }
-  .option:disabled{ opacity:.85; cursor: default; }
-
-  #overlay{
-    position:absolute;
-    inset:0;
-    display:none;
-    align-items:center;
-    justify-content:center;
-    background: rgba(0,0,0,.75);
-    flex-direction:column;
-    gap: 10px;
-    padding: 16px;
-  }
-  #overlay-text{
-    font-size: clamp(20px, 4.5vw, 34px);
-    color:#FFD700;
-    text-shadow: 0 0 10px #ff0000;
-  }
-  #countdown{
-    font-size: clamp(44px, 10vw, 76px);
-    color:#fff;
-  }
-
-  #results h2{
-    font-size: clamp(26px, 5vw, 44px);
-    margin: 0 0 10px;
-    color:#FFD700;
-    text-shadow: 0 0 16px #ff0000;
-  }
-  #results p{
-    font-size: clamp(18px, 3.2vw, 26px);
-    margin: 0;
-  }
-
-  @media (max-width: 640px){
-    .options{ grid-template-columns: 1fr; }
-  }
-</style>
-</head>
-
-<body>
-<div class="container">
-  <h1>🎄 Christmas Movie Zoom Quiz 🎄</h1>
-
-  <div id="intro">
-    <p>
-      🎯 Start with <b>10 points</b><br/>
-      🔍 Zoom out: <b>−1</b><br/>
-      ❌ Wrong guess: <b>−2</b> and zooms out 1 level<br/>
-      🔁 Keep guessing until points hit 0<br/>
-      ✅ Correct guess earns remaining points<br/>
-      🎲 Each game uses <b>25 random movies</b> (no repeats)
-    </p>
-    <button id="start-btn">🎅 Start Game</button>
-  </div>
-
-  <div id="quiz" class="hidden">
-    <div class="image-container" id="image-container">
-      <img id="movie-image" alt="Movie scene" />
-      <div id="overlay">
-        <div id="overlay-text"></div>
-        <div id="countdown"></div>
-      </div>
-    </div>
-
-    <div class="hud">
-      <button id="zoom-btn">Zoom Out</button>
-      <div id="score"></div>
-    </div>
-
-    <div class="options" id="options"></div>
-  </div>
-
-  <div id="results" class="hidden"></div>
-</div>
-
-<script>
-/* ========= Image URLs (EXACTLY as you provided, in order) ========= */
-const imageLinks = [
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/a0.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/a1.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/a2.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/a3.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/a4.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/a5.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/a6.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/a7.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/a8.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/a9.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/b0.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/b1.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/b2.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/b3.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/b4.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/b5.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/b6.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/b7.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/b8.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/b9.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/c0.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/c1.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/c2.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/c3.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/c4.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/c5.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/c6.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/c7.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/c8.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/c9.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/d0.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/d1.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/d2.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/d3.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/d4.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/d5.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/d6.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/d7.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/d8.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/d9.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/e0.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/e1.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/e2.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/e3.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/e4.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/e5.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/e6.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/e7.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/e8.png",
-  "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/e9.png"
-];
-
-/* ========= Movie list (50 entries). Images are assigned by index to imageLinks above. ========= */
-/* NOTE: Titles/years kept as previously defined in your game. Only image links were the issue. */
-const movieData = [
-  { title:"Elf", year:2003 },
-  { title:"Home Alone 2: Lost in New York", year:1992 },
-  { title:"Rudolph The Red-Nosed Reindeer", year:1964 },
-  { title:"A Christmas Story", year:1983 },
-  { title:"Nightmare Before Christmas", year:1993 },
-  { title:"The Santa Clause", year:1994 },
-  { title:"Frosty the Snowman", year:1969 },
-  { title:"The Year Without a Santa Claus", year:1974 },
-  { title:"Jack Frost", year:1998 },
-  { title:"White Christmas", year:1954 },
-  { title:"Jingle All the Way", year:1996 },
-  { title:"Prancer", year:1989 },
-  { title:"Scrooged", year:1988 },
-  { title:"Christmas with the Kranks", year:2004 },
-  { title:"Deck the Halls", year:2006 },
-  { title:"Just Friends", year:2005 },
-  { title:"Ernest Saves Christmas", year:1988 },
-  { title:"Mr. Magoo's Christmas Carol", year:1962 },
-  { title:"It's A Wonderful Life", year:1946 },
-  { title:"National Lampoon's Christmas Vacation", year:1989 },
-  { title:"Miracle on 34th Street", year:1994 },
-  { title:"How the Grinch Stole Christmas", year:2000 },
-  { title:"A Charlie Brown Christmas", year:1965 },
-  { title:"Santa Claus is Coming to Town", year:1970 },
-  { title:"Batman Begins", year:2005 },
-  { title:"The Muppet Christmas Carol", year:1992 },
-  { title:"The Holiday", year:2006 },
-  { title:"Home Alone", year:1990 },
-  { title:"The Small One", year:1978 },
-  { title:"Mickey's Once Upon a Christmas", year:1999 },
-  { title:"The Polar Express", year:2004 },
-  { title:"Love Actually", year:2003 },
-  { title:"Die Hard", year:1988 },
-  { title:"Bad Santa", year:2003 },
-  { title:"Arthur Christmas", year:2011 },
-  { title:"Klaus", year:2019 },
-  { title:"The Christmas Chronicles", year:2018 },
-  { title:"Gremlins", year:1984 },
-  { title:"Fred Claus", year:2007 },
-  { title:"The Family Man", year:2000 },
-  { title:"Four Christmases", year:2008 },
-  { title:"The Preacher's Wife", year:1996 },
-  { title:"I'll Be Home for Christmas", year:1998 },
-  { title:"Noelle", year:2019 },
-  { title:"Spirited", year:2022 },
-  { title:"Violent Night", year:2022 },
-  { title:"8-Bit Christmas", year:2021 },
-  { title:"The Christmas Setup", year:2020 },
-  { title:"Happiest Season", year:2020 },
-  { title:"Last Christmas", year:2019 }
-].map((m, i) => ({ ...m, image: imageLinks[i] }));
-
-/* ========= Core game ========= */
-const introEl = document.getElementById("intro");
-const quizEl = document.getElementById("quiz");
-const resultsEl = document.getElementById("results");
-
-const imageContainer = document.getElementById("image-container");
-const imgEl = document.getElementById("movie-image");
-const optionsEl = document.getElementById("options");
-const zoomBtn = document.getElementById("zoom-btn");
-const scoreEl = document.getElementById("score");
-
-const overlayEl = document.getElementById("overlay");
-const overlayTextEl = document.getElementById("overlay-text");
-const countdownEl = document.getElementById("countdown");
-
-const vibrate = (pattern) => { try { if (navigator.vibrate) navigator.vibrate(pattern); } catch {} };
-const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
-
-let selectedMovies = [];
-let qIndex = 0;
-let zoomLevel = 0;     // 0..9
-let points = 10;
-let totalScore = 0;
-
-// focal movement state + bias
-let offsetX = 0, offsetY = 0;
-let lastX = 0, lastY = 0;
-
-function updateHUD() {
-  scoreEl.textContent = `Possible: ${points} point${points === 1 ? "" : "s"} | Zooms left: ${Math.max(0, 9 - zoomLevel)}`;
-  zoomBtn.disabled = (points <= 0 || zoomLevel >= 9);
-  zoomBtn.textContent = zoomBtn.disabled ? "Fully Revealed" : "Zoom Out";
-}
-
-function applyTransform() {
-  const scale = Math.max(1, 10 - zoomLevel);
-  imgEl.style.transform = `translate(-50%, -50%) translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
-}
-
-function randomOffsetWithDirectionalBias() {
-  // Big moves early; a bit calmer late.
-  const maxShift = 220 - zoomLevel * 14;    // px
-  const minDist  = 140 - zoomLevel * 10;   // px
-
-  let tries = 0;
-  let nx, ny;
-
-  do {
-    nx = (Math.random() * 2 - 1) * maxShift;
-    ny = (Math.random() * 2 - 1) * maxShift;
-    tries++;
-  } while (Math.hypot(nx - lastX, ny - lastY) < Math.max(40, minDist) && tries < 40);
-
-  offsetX = nx; offsetY = ny;
-  lastX = nx; lastY = ny;
-}
-
-function setColorMode(on) {
-  if (on) imageContainer.classList.add("color");
-  else imageContainer.classList.remove("color");
-}
-
-function showOverlay(text) {
-  overlayTextEl.textContent = text;
-  countdownEl.textContent = "";
-  overlayEl.style.display = "flex";
-}
-
-function hideOverlay() {
-  overlayEl.style.display = "none";
-  overlayTextEl.textContent = "";
-  countdownEl.textContent = "";
-}
-
-function startCountdownAndAdvance(message) {
-  showOverlay(message);
-  let c = 3;
-  countdownEl.textContent = c;
-
-  const timer = setInterval(() => {
-    c--;
-    countdownEl.textContent = c;
-    if (c <= 0) {
-      clearInterval(timer);
-      nextQuestion();
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Christmas Movie Zoom Quiz</title>
+  <link href="https://fonts.googleapis.com/css2?family=Mountains+of+Christmas:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      background: linear-gradient(135deg, #2c3e50, #2980b9);
+      color: #fff;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      text-align: center;
     }
-  }, 1000);
-}
-
-function buildOptions(correctMovie) {
-  optionsEl.innerHTML = "";
-
-  const pool = movieData.filter(m => m !== correctMovie);
-  const distractors = shuffle(pool).slice(0, 7);
-  const choices = shuffle([correctMovie, ...distractors]);
-
-  choices.forEach(choice => {
-    const btn = document.createElement("button");
-    btn.className = "option";
-    btn.textContent = choice.title;
-    btn.addEventListener("click", () => handleGuess(btn, choice === correctMovie, correctMovie));
-    optionsEl.appendChild(btn);
-  });
-}
-
-function disableAllOptions() {
-  document.querySelectorAll(".option").forEach(b => b.disabled = true);
-}
-
-function handleGuess(btn, isCorrect, correctMovie) {
-  if (btn.disabled || points <= 0) return;
-
-  if (isCorrect) {
-    btn.classList.add("correct");
-    vibrate([40, 40, 80]);
-    totalScore += points;
-
-    // reveal fully + color
-    zoomLevel = 9;
-    randomOffsetWithDirectionalBias();
-    applyTransform();
-    setColorMode(true);
-    updateHUD();
-
-    disableAllOptions();
-    zoomBtn.disabled = true;
-
-    startCountdownAndAdvance(`✅ Correct! +${points} point${points === 1 ? "" : "s"}`);
-    return;
-  }
-
-  // incorrect: -2 points and zoom out 1 level, but allow more guesses
-  btn.classList.add("incorrect");
-  btn.disabled = true;
-  vibrate([100, 50, 100]);
-
-  points = Math.max(0, points - 2);
-  zoomLevel = Math.min(9, zoomLevel + 1);
-  randomOffsetWithDirectionalBias();
-  applyTransform();
-
-  if (zoomLevel >= 8) setColorMode(true);
-  updateHUD();
-
-  if (points <= 0) {
-    // reveal answer and move on
-    zoomLevel = 9;
-    randomOffsetWithDirectionalBias();
-    applyTransform();
-    setColorMode(true);
-    updateHUD();
-
-    disableAllOptions();
-    zoomBtn.disabled = true;
-
-    startCountdownAndAdvance(`🧾 Answer: ${correctMovie.title}`);
-  }
-}
-
-function zoomOutAction(correctMovie) {
-  if (points <= 0 || zoomLevel >= 9) return;
-
-  vibrate(30);
-  points = Math.max(0, points - 1);
-  zoomLevel = Math.min(9, zoomLevel + 1);
-
-  randomOffsetWithDirectionalBias();
-  applyTransform();
-
-  if (zoomLevel >= 8) setColorMode(true);
-  updateHUD();
-
-  if (points <= 0) {
-    // reveal answer and move on
-    zoomLevel = 9;
-    randomOffsetWithDirectionalBias();
-    applyTransform();
-    setColorMode(true);
-    updateHUD();
-
-    disableAllOptions();
-    zoomBtn.disabled = true;
-
-    startCountdownAndAdvance(`🧾 Answer: ${correctMovie.title}`);
-  }
-}
-
-function loadQuestion() {
-  hideOverlay();
-  setColorMode(false);
-
-  zoomLevel = 0;
-  points = 10;
-  offsetX = offsetY = lastX = lastY = 0;
-
-  const movie = selectedMovies[qIndex];
-  imgEl.src = movie.image;
-
-  // When image loads, do first transform so it doesn't flash centered.
-  imgEl.onload = () => {
-    randomOffsetWithDirectionalBias();
-    applyTransform();
-  };
-
-  buildOptions(movie);
-  updateHUD();
-
-  zoomBtn.onclick = () => zoomOutAction(movie);
-}
-
-function nextQuestion() {
-  qIndex++;
-  if (qIndex < selectedMovies.length) {
-    loadQuestion();
-  } else {
-    showResults();
-  }
-}
-
-function showResults() {
-  quizEl.classList.add("hidden");
-  resultsEl.classList.remove("hidden");
-
-  resultsEl.innerHTML = `
-    <h2>🎉 Final Score 🎉</h2>
-    <p>You scored <b>${totalScore}</b> points out of a max of 250.</p>
-    <p style="margin-top:10px; font-size:18px; opacity:.9;">
-      Refresh to play again (or don’t, and enjoy peace).
-    </p>
-  `;
-}
-
-document.getElementById("start-btn").addEventListener("click", () => {
-  // 25 unique movies per playthrough
-  selectedMovies = shuffle(movieData).slice(0, 25);
-  qIndex = 0;
-  totalScore = 0;
-
-  introEl.classList.add("hidden");
-  resultsEl.classList.add("hidden");
-  quizEl.classList.remove("hidden");
-
-  loadQuestion();
-});
-</script>
+    h1 {
+      font-family: 'Mountains of Christmas', cursive;
+      font-size: 2.5em;
+      margin: 0.2em 0;
+    }
+    #startScreen, #finalScreen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    #startScreen.active, #finalScreen.active {
+      display: flex;
+    }
+    #gameScreen {
+      display: none;
+      padding: 10px 5%;
+    }
+    #gameScreen.active {
+      display: block;
+    }
+    #statusBar {
+      font-weight: bold;
+      margin-bottom: 5px;
+      font-size: 1.1em;
+    }
+    #imageContainer {
+      position: relative;
+      margin: 10px auto;
+      width: 80%;
+      max-width: 600px;
+      overflow: hidden;
+    }
+    #movieImage {
+      width: 100%;
+      height: auto;
+      transform: scale(1);
+      transform-origin: 50% 50%;
+      transition: transform 0.5s ease;
+    }
+    #zoomButton {
+      display: inline-block;
+      margin: 10px 0;
+      padding: 12px 20px;
+      font-size: 1em;
+      cursor: pointer;
+      background: #17a2b8;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+    }
+    #answers {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 10px 0;
+    }
+    @media (max-width: 500px) {
+      #answers {
+        grid-template-columns: 1fr;
+      }
+    }
+    .answerBtn {
+      padding: 10px;
+      font-size: 1em;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background: #ffc107;
+      color: #000;
+      text-align: center;
+    }
+    .answerBtn:hover:enabled {
+      opacity: 0.8;
+    }
+    .answerBtn:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+    .answerBtn.correct {
+      background: #28a745;
+      color: #fff;
+    }
+    .answerBtn.wrong {
+      background: #dc3545;
+      color: #fff;
+    }
+    .answerBtn.selected {
+      outline: 3px solid #fff;
+    }
+    #feedback {
+      margin-top: 10px;
+      font-size: 1.2em;
+    }
+    #finalMessage {
+      font-family: 'Mountains of Christmas', cursive;
+      font-size: 2em;
+      margin: 0.5em 0;
+    }
+    #playAgainBtn, #startButton {
+      background: #ffc107;
+      color: #000;
+      font-size: 1.2em;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 10px;
+    }
+    #playAgainBtn:hover, #startButton:hover {
+      background: #e0a800;
+    }
+    #introText {
+      max-width: 800px;
+      text-align: left;
+      margin: 1em auto;
+      font-size: 1.1em;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <!-- Start Screen -->
+  <div id="startScreen" class="active">
+    <h1>Christmas Movie Zoom Quiz</h1>
+    <div id="introText">
+      <p>Welcome to the Christmas Movie Zoom Quiz! In this game, you'll see a zoomed-in image from a Christmas movie. Your score for each movie starts at 10 points. If you need a hint, press the "Zoom Out" button to reveal more of the image (costs 1 point). Be careful: a wrong guess costs 2 points and also zooms the image out one level.</p>
+      <p>You can make multiple guesses per image until you get it right or run out of points. If your points for an image reach 0, the image will be fully revealed and the answer shown. You get to play through 25 random movies. Try to score as high as possible (max 250 points)!</p>
+      <p>Use the on-screen buttons or your keyboard (number keys 1-8 to select an answer, arrow keys to navigate options, Enter to submit). Good luck and have fun!</p>
+    </div>
+    <button id="startButton">Start Game</button>
+  </div>
+  <!-- Game Screen -->
+  <div id="gameScreen">
+    <div id="statusBar"></div>
+    <div id="imageContainer">
+      <img id="movieImage" src="" alt="Movie scene" />
+    </div>
+    <button id="zoomButton">🔍 Zoom Out (-1 Point)</button>
+    <div id="answers"></div>
+    <div id="feedback"></div>
+  </div>
+  <!-- Final Score Screen -->
+  <div id="finalScreen">
+    <h1 id="finalMessage"></h1>
+    <div id="finalScore"></div>
+    <button id="playAgainBtn">Play Again</button>
+  </div>
+  <script>
+    // Movie data: 50 Christmas movies with title, year, and image URL
+    const movies = [
+      {
+        "title": "Elf",
+        "year": 2003,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/a0.png"
+      },
+      {
+        "title": "Home Alone 2: Lost in New York",
+        "year": 1992,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/a1.png"
+      },
+      {
+        "title": "Rudolph The Red-Nosed Reindeer",
+        "year": 1964,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/a2.png"
+      },
+      {
+        "title": "A Christmas Story",
+        "year": 1983,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/a3.png"
+      },
+      {
+        "title": "Nightmare Before Christmas",
+        "year": 1993,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/a4.png"
+      },
+      {
+        "title": "The Santa Clause",
+        "year": 1994,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/a5.png"
+      },
+      {
+        "title": "Frosty the Snowman",
+        "year": 1969,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/a6.png"
+      },
+      {
+        "title": "The Year Without a Santa Claus",
+        "year": 1974,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/a7.png"
+      },
+      {
+        "title": "Jack Frost",
+        "year": 1998,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/a8.png"
+      },
+      {
+        "title": "White Christmas",
+        "year": 1954,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/a9.png"
+      },
+      {
+        "title": "Jingle All the Way",
+        "year": 1996,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/b0.png"
+      },
+      {
+        "title": "Prancer",
+        "year": 1989,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/b1.png"
+      },
+      {
+        "title": "Scrooged",
+        "year": 1988,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/b2.png"
+      },
+      {
+        "title": "Christmas with the Kranks",
+        "year": 2004,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/b3.png"
+      },
+      {
+        "title": "Deck the Halls",
+        "year": 2006,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/b4.png"
+      },
+      {
+        "title": "Just Friends",
+        "year": 2005,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/b5.png"
+      },
+      {
+        "title": "Ernest Saves Christmas",
+        "year": 1988,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/b6.png"
+      },
+      {
+        "title": "Mr. Magoo's Christmas Carol",
+        "year": 1962,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/b7.png"
+      },
+      {
+        "title": "It's A Wonderful Life",
+        "year": 1946,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/b8.png"
+      },
+      {
+        "title": "National Lampoon's Christmas Vacation",
+        "year": 1989,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/b9.png"
+      },
+      {
+        "title": "Miracle on 34th Street",
+        "year": 1994,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/c0.png"
+      },
+      {
+        "title": "How the Grinch Stole Christmas",
+        "year": 2000,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/c1.png"
+      },
+      {
+        "title": "A Charlie Brown Christmas",
+        "year": 1965,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/c2.png"
+      },
+      {
+        "title": "Santa Claus is Coming to Town",
+        "year": 1970,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/c3.png"
+      },
+      {
+        "title": "Batman Returns",
+        "year": 1992,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/c4.png"
+      },
+      {
+        "title": "The Muppet Christmas Carol",
+        "year": 1992,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/c5.png"
+      },
+      {
+        "title": "The Holiday",
+        "year": 2006,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/c6.png"
+      },
+      {
+        "title": "Home Alone",
+        "year": 1990,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/c7.png"
+      },
+      {
+        "title": "The Small One",
+        "year": 1978,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/c8.png"
+      },
+      {
+        "title": "Mickey's Once Upon a Christmas",
+        "year": 1999,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/c9.png"
+      },
+      {
+        "title": "Die Hard",
+        "year": 1988,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/d0.png"
+      },
+      {
+        "title": "Gremlins",
+        "year": 1984,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/d1.png"
+      },
+      {
+        "title": "Bad Santa",
+        "year": 2003,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/d2.png"
+      },
+      {
+        "title": "Edward Scissorhands",
+        "year": 1990,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/d3.png"
+      },
+      {
+        "title": "Polar Express",
+        "year": 2004,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/d4.png"
+      },
+      {
+        "title": "Love Actually",
+        "year": 2003,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/d5.png"
+      },
+      {
+        "title": "8-Bit Christmas",
+        "year": 2021,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/d6.png"
+      },
+      {
+        "title": "The Christmas Chronicles",
+        "year": 2018,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/d7.png"
+      },
+      {
+        "title": "The Little Drummer Boy",
+        "year": 1968,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/d8.png"
+      },
+      {
+        "title": "Holiday Affair",
+        "year": 1949,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/d9.png"
+      },
+      {
+        "title": "A Very Harold & Kumar Christmas",
+        "year": 2011,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/e0.png"
+      },
+      {
+        "title": "A Boy Called Christmas",
+        "year": 2021,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/e1.png"
+      },
+      {
+        "title": "Red One",
+        "year": 2024,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/e2.png"
+      },
+      {
+        "title": "I'll Be Home for Christmas",
+        "year": 1998,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/e3.png"
+      },
+      {
+        "title": "The Christmas Shoes",
+        "year": 2002,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/e4.png"
+      },
+      {
+        "title": "Trading Places",
+        "year": 1983,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/e5.png"
+      },
+      {
+        "title": "While You Were Sleeping",
+        "year": 1995,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/e6.png"
+      },
+      {
+        "title": "Spirited",
+        "year": 2022,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/e7.png"
+      },
+      {
+        "title": "Santa Buddies",
+        "year": 2009,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/e8.png"
+      },
+      {
+        "title": "Fred Claus",
+        "year": 2007,
+        "image": "https://raw.githubusercontent.com/stunt456/GroupMovieGame/main/e9.png"
+      }
+    ];
+    // Additional decoy movie titles not in the main list
+    const extraTitles = ["Frozen", "Klaus", "The Grinch", "Krampus", "Arthur Christmas"];
+    let selectedIndices = [];
+    let currentQuestion = 0;
+    let currentMovie = null;
+    let currentPoints = 10;
+    let totalScore = 0;
+    let zoomLevel = 0;
+    let quizActive = false;
+    let selectionIndex = -1;
+    
+    // Shuffle array utility
+    function shuffleArray(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+    }
+    
+    // Zoom state definitions (scale and origin for each zoom level 0-10)
+    const zoomStates = [
+      { scale: 1.0, origin: '50% 50%' },   // 0: fully revealed
+      { scale: 1.4, origin: '50% 50%' },   // 1
+      { scale: 1.8, origin: '50% 50%' },   // 2
+      { scale: 2.2, origin: '100% 50%' },  // 3
+      { scale: 2.6, origin: '0% 50%' },    // 4
+      { scale: 3.0, origin: '50% 100%' },  // 5
+      { scale: 3.4, origin: '50% 0%' },    // 6
+      { scale: 3.8, origin: '0% 100%' },   // 7
+      { scale: 4.2, origin: '100% 100%' }, // 8
+      { scale: 4.6, origin: '100% 0%' },   // 9
+      { scale: 5.0, origin: '0% 0%' }      // 10: most zoomed-in (initial)
+    ];
+    
+    // Initialize a new quiz
+    function startGame() {
+      // Reset state
+      totalScore = 0;
+      currentQuestion = 0;
+      selectedIndices = [...Array(movies.length).keys()];
+      shuffleArray(selectedIndices);
+      selectedIndices = selectedIndices.slice(0, 25);
+      // Prepare UI for game
+      document.getElementById('startScreen').classList.remove('active');
+      document.getElementById('finalScreen').classList.remove('active');
+      document.getElementById('gameScreen').classList.add('active');
+      quizActive = true;
+      // Start first question
+      showQuestion(0);
+    }
+    
+    function showQuestion(index) {
+      currentQuestion = index;
+      currentPoints = 10;
+      zoomLevel = 10; // start at most zoomed-in level (index 10 in zoomStates)
+      const movieIndex = selectedIndices[index];
+      currentMovie = movies[movieIndex];
+      // Update status bar
+      document.getElementById('statusBar').textContent = `Question ${index+1}/25 | Points: ${currentPoints} | Score: ${totalScore}`;
+      // Set image and initial zoom
+      const img = document.getElementById('movieImage');
+      img.src = currentMovie.image;
+      // Apply initial zoom state (most zoomed-in)
+      img.style.transformOrigin = zoomStates[zoomLevel].origin;
+      img.style.transform = `scale(${zoomStates[zoomLevel].scale})`;
+      // Enable zoom button
+      const zoomBtn = document.getElementById('zoomButton');
+      zoomBtn.disabled = false;
+      // Build answer options
+      const answersDiv = document.getElementById('answers');
+      answersDiv.innerHTML = '';
+      // Prepare the answer list (one correct + 7 decoys)
+      let options = [];
+      // take all other titles except current
+      const otherTitles = movies.map(m => m.title).filter(t => t !== currentMovie.title);
+      // possibly include extras in decoys pool
+      const decoyPool = otherTitles.concat(extraTitles);
+      shuffleArray(decoyPool);
+      options = decoyPool.slice(0, 7);
+      // ensure no duplicate with correct just in case
+      options.push(currentMovie.title);
+      shuffleArray(options);
+      // Create answer buttons
+      options.forEach(title => {
+        const btn = document.createElement('button');
+        btn.textContent = title;
+        btn.className = 'answerBtn';
+        btn.disabled = false;
+        // Click handler for answer
+        btn.addEventListener('click', () => { selectAnswer(btn); });
+        answersDiv.appendChild(btn);
+      });
+      // Reset feedback message
+      const feedback = document.getElementById('feedback');
+      feedback.textContent = '';
+      feedback.style.display = 'none';
+      // Reset selection index for keyboard nav
+      selectionIndex = -1;
+      updateSelectionHighlight();
+    }
+    
+    function selectAnswer(button) {
+      if (!quizActive) return;
+      const guess = button.textContent;
+      const answersButtons = document.querySelectorAll('.answerBtn');
+      // Disable all answers temporarily to prevent multiple clicks
+      answersButtons.forEach(btn => btn.disabled = true);
+      if (guess === currentMovie.title) {
+        // Correct answer
+        button.classList.add('correct');
+        // Add current points to total score
+        totalScore += currentPoints;
+        // Show full image
+        revealFullImage();
+        // Haptic feedback for correct (vibrate if supported)
+        if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+        // Show feedback message
+        const feedback = document.getElementById('feedback');
+        feedback.style.display = 'block';
+        feedback.textContent = '✅ Correct! Next image in 5...';
+        // Proceed to next question after countdown
+        nextQuestionAfterDelay();
+      } else {
+        // Wrong answer
+        button.classList.add('wrong');
+        // Haptic feedback for wrong (vibrate if supported)
+        if (navigator.vibrate) navigator.vibrate(300);
+        // Deduct 2 points
+        currentPoints -= 2;
+        if (currentPoints < 0) currentPoints = 0;
+        // Update status bar
+        document.getElementById('statusBar').textContent = `Question ${currentQuestion+1}/25 | Points: ${currentPoints} | Score: ${totalScore}`;
+        if (currentPoints <= 0) {
+          // Out of points - reveal answer
+          revealFullImage();
+          // Highlight correct answer
+          answersButtons.forEach(btn => {
+            if (btn.textContent === currentMovie.title) {
+              btn.classList.add('correct');
+            }
+          });
+          // Show feedback with correct title
+          const feedback = document.getElementById('feedback');
+          feedback.style.display = 'block';
+          feedback.textContent = `❌ Out of points! The correct answer was "${currentMovie.title}". Next image in 5...`;
+          // Next question after short delay
+          nextQuestionAfterDelay();
+        } else {
+          // Still have points, reveal one more level
+          zoomLevel = Math.max(0, zoomLevel - 1);
+          const img = document.getElementById('movieImage');
+          img.style.transformOrigin = zoomStates[zoomLevel].origin;
+          img.style.transform = `scale(${zoomStates[zoomLevel].scale})`;
+          // Re-enable unanswered buttons after short delay
+          setTimeout(() => {
+            answersButtons.forEach(btn => {
+              if (!btn.classList.contains('wrong') && !btn.classList.contains('correct')) {
+                btn.disabled = false;
+              }
+            });
+          }, 500);
+        }
+      }
+    }
+    
+    function revealFullImage() {
+      // Set image to fully revealed state
+      zoomLevel = 0;
+      const img = document.getElementById('movieImage');
+      img.style.transformOrigin = zoomStates[0].origin;
+      img.style.transform = `scale(${zoomStates[0].scale})`;
+      // Disable zoom out button
+      document.getElementById('zoomButton').disabled = true;
+      // Disable all answer buttons
+      document.querySelectorAll('.answerBtn').forEach(btn => btn.disabled = true);
+    }
+    
+    function nextQuestionAfterDelay() {
+      // Countdown 5 seconds then next question or end game
+      let countdown = 5;
+      const feedback = document.getElementById('feedback');
+      const timer = setInterval(() => {
+        countdown--;
+        if (feedback.textContent) {
+          feedback.textContent = feedback.textContent.replace(/\d+/, countdown);
+        }
+        if (countdown <= 0) {
+          clearInterval(timer);
+          // Next question or end game
+          if (currentQuestion < 24) {
+            showQuestion(currentQuestion + 1);
+          } else {
+            endGame();
+          }
+        }
+      }, 1000);
+    }
+    
+    function endGame() {
+      quizActive = false;
+      // Hide game screen, show final screen
+      document.getElementById('gameScreen').classList.remove('active');
+      document.getElementById('finalScreen').classList.add('active');
+      // Display final score message
+      document.getElementById('finalMessage').innerHTML = `🎄 Merry Christmas! 🎄<br>You scored ${totalScore} out of 250 points!`;
+    }
+    
+    // Event listeners for buttons
+    document.getElementById('startButton').addEventListener('click', startGame);
+    document.getElementById('playAgainBtn').addEventListener('click', startGame);
+    document.getElementById('zoomButton').addEventListener('click', () => {
+      if (!quizActive) return;
+      // Zoom out action
+      currentPoints -= 1;
+      if (currentPoints < 0) currentPoints = 0;
+      // Update status bar
+      document.getElementById('statusBar').textContent = `Question ${currentQuestion+1}/25 | Points: ${currentPoints} | Score: ${totalScore}`;
+      zoomLevel = Math.max(0, zoomLevel - 1);
+      const img = document.getElementById('movieImage');
+      img.style.transformOrigin = zoomStates[zoomLevel].origin;
+      img.style.transform = `scale(${zoomStates[zoomLevel].scale})`;
+      if (currentPoints <= 0) {
+        // Reveal answer when points drop to 0
+        document.querySelectorAll('.answerBtn').forEach(btn => {
+          if (btn.textContent === currentMovie.title) {
+            btn.classList.add('correct');
+          } else {
+            btn.disabled = true;
+          }
+        });
+        revealFullImage();
+        const feedback = document.getElementById('feedback');
+        feedback.style.display = 'block';
+        feedback.textContent = `❌ Out of points! The correct answer was "${currentMovie.title}". Next image in 5...`;
+        nextQuestionAfterDelay();
+      }
+    });
+    
+    // Keyboard navigation and shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (!quizActive) {
+        // On start screen, allow Enter to start
+        if (document.getElementById('startScreen').classList.contains('active') && e.key === 'Enter') {
+          startGame();
+          return;
+        }
+        // On final screen, allow Enter to play again
+        if (document.getElementById('finalScreen').classList.contains('active') && e.key === 'Enter') {
+          startGame();
+          return;
+        }
+        return;
+      }
+      const answerButtons = document.querySelectorAll('.answerBtn');
+      if (e.key >= '1' && e.key <= '8') {
+        // Number key pressed: select corresponding answer
+        const idx = parseInt(e.key, 10) - 1;
+        if (idx < answerButtons.length) {
+          answerButtons[idx].click();
+        }
+      } else if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+        // Move selection down/right
+        if (selectionIndex === -1) {
+          selectionIndex = 0;
+        } else {
+          let newIndex = selectionIndex;
+          do {
+            newIndex = (newIndex + 1) % answerButtons.length;
+          } while (answerButtons[newIndex].disabled);
+          selectionIndex = newIndex;
+        }
+        updateSelectionHighlight();
+      } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+        // Move selection up/left
+        if (selectionIndex === -1) {
+          selectionIndex = 0;
+        } else {
+          let newIndex = selectionIndex;
+          do {
+            newIndex = (newIndex - 1 + answerButtons.length) % answerButtons.length;
+          } while (answerButtons[newIndex].disabled);
+          selectionIndex = newIndex;
+        }
+        updateSelectionHighlight();
+      } else if (e.key === 'Enter') {
+        // Press Enter to confirm highlighted answer
+        if (selectionIndex >= 0 && selectionIndex < answerButtons.length) {
+          answerButtons[selectionIndex].click();
+        }
+      }
+    });
+    
+    function updateSelectionHighlight() {
+      const answerButtons = document.querySelectorAll('.answerBtn');
+      answerButtons.forEach((btn, i) => {
+        if (i === selectionIndex) {
+          btn.classList.add('selected');
+        } else {
+          btn.classList.remove('selected');
+        }
+      });
+    }
+    
+    // Start screen is shown by default on page load.
+  </script>
 </body>
 </html>
