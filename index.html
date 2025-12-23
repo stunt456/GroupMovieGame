@@ -458,7 +458,7 @@
       currentQuestion = 0;
       selectedIndices = [...Array(movies.length).keys()];
       shuffleArray(selectedIndices);
-      selectedIndices = selectedIndices.slice(0, 25);
+      selectedIndices = selectedIndices.slice(0, movies.length);
       // Prepare UI for game
       document.getElementById('startScreen').classList.remove('active');
       document.getElementById('finalScreen').classList.remove('active');
@@ -475,7 +475,7 @@
       const movieIndex = selectedIndices[index];
       currentMovie = movies[movieIndex];
       // Update status bar
-      document.getElementById('statusBar').textContent = `Question ${index+1}/25 | Points: ${currentPoints} | Score: ${totalScore}`;
+      document.getElementById('statusBar').textContent = `Question ${index+1}/${selectedIndices.length} | Points: ${currentPoints} | Score: ${totalScore}`;
       // Set image and initial zoom
       const img = document.getElementById('movieImage');
       img.src = currentMovie.image;
@@ -606,7 +606,7 @@
         if (countdown <= 0) {
           clearInterval(timer);
           // Next question or end game
-          if (currentQuestion < 24) {
+          if (currentQuestion < selectedIndices.length - 1) {
             showQuestion(currentQuestion + 1);
           } else {
             endGame();
@@ -621,7 +621,7 @@
       document.getElementById('gameScreen').classList.remove('active');
       document.getElementById('finalScreen').classList.add('active');
       // Display final score message
-      document.getElementById('finalMessage').innerHTML = `🎄 Merry Christmas! 🎄<br>You scored ${totalScore} out of 250 points!`;
+      document.getElementById('finalMessage').innerHTML = `🎄 Merry Christmas! 🎄<br>You scored ${totalScore} out of ${selectedIndices.length * 10} points!`;
     }
     
     // Event listeners for buttons
