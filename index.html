@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Christmas Movie Zoom Quiz</title>
+
+<style>
+body {
+    font-family: system-ui, Arial, sans-serif;
+    background: radial-gradient(circle at top, #124422, #001a0a);
+    color: white;
+    margin: 0;
+    text-align: center;
+}
+
+.container {
+    max-width: 900px;
+    margin: auto;
+    padding: 20px;
+}
+
+h1 {
+    font-size: clamp(38px, 6vw, 58px);
+}
+
+p {
+    font-size: 22px;
+}
+
+#start-btn {
+    padding: 26px 44px;
+    font-size: 30px;
+    border-radius: 24px;
+    background: gold;
+    color: #003300;
+    border: none;
+}
+
+.image-container {
+    position: relative;
+    height: min(65vw, 460px);
+    margin-bottom: 16px;
+    overflow: hidden;
+    border: 6px solid gold;
+    border-radius: 18px;
+    background: black;
+}
+
+#movie-image {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    max-width: 170%;
+    max-height: 170%;
+    transition: transform 0.6s ease;
+    filter: grayscale(100%);
+}
+
+.color #movie-image {
+    filter: none;
+}
+
+#zoom-out-btn {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    padding: 14px 18px;
+    font-size: 16px;
+}
+
+#score-display {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    font-size: 18px;
+}
+
+.options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.option-btn {
+    padding: 18px;
+    font-size: 18px;
+    border-radius: 16px;
+}
+
+.option-btn.correct { background: #1f7f1f; color: white; }
+.option-btn.incorrect { background: #7f1f1f; color: white; }
+
+#overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.75);
+    flex-direction: column;
+}
+
+#overlay-text { font-size: 32px; }
+#countdown { font-size: 70px; }
+
+.hidden { display: none; }
+
+#results {
+    font-size: 40px;
+    padding: 60px 20px;
+}
+
+@media (max-width: 600px) {
+    .options { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<div id="intro">
+    <h1>🎄 Christmas Movie Zoom Quiz 🎄</h1>
+    <p>
+        🎯 Start with <strong>10 points</strong><br>
+        🔍 Zoom out: −1 point<br>
+        ❌ Wrong guess: −2 points<br>
+        🔁 Keep guessing until points hit 0<br>
+        ✅ Correct guess earns remaining points
+    </p>
+    <button id="start-btn">Start Quiz</button>
+</div>
+
+<div id="quiz" class="hidden">
+    <div class="image-container" id="image-container">
+        <img id="movie-image">
+        <button id="zoom-out-btn">Zoom Out</button>
+        <div id="score-display"></div>
+
+        <div id="overlay">
+            <div id="overlay-text"></div>
+            <div id="countdown"></div>
+        </div>
+    </div>
+    <div class="options" id="options"></div>
+</div>
+
+<div id="results" class="hidden">
+    <h1>🎁 Final Score 🎁</h1>
+    <p id="final-score"></p>
+</div>
+
+</div>
+
+<script>
+// ================= MOVIE DATA (50 TOTAL) =================
+const movieData = [
+{"title":"Elf","year":2003,"image":"https://raw.githubusercontent.com/stunt456/GroovyChristmasImages/main/1.jpg"},
+{"title":"Home Alone 2: Lost in New York","year":1992,"image":"https://raw.githubusercontent.com/stunt456/GroovyChristmasImages/main/2.jpg"},
+{"title":"Rudolph The Red-Nosed Reindeer","year":1964,"image":"https://raw.githubusercontent.com/stunt456/GroovyChristmasImages/main/3.jpg"},
+{"title":"A Christmas Story","year":1983,"image":"https://raw.githubusercontent.com/stunt456/GroovyChristmasImages/main/4.jpg"},
+{"title":"Nightmare Before Christmas","year":1993,"image":"https://raw.githubusercontent.com/stunt456/GroovyChristmasImages/main/5.jpg"},
+{"title":"The Santa Clause","year":1994,"image":"https://raw.githubusercontent.com/stunt456/GroovyChristmasImages/main/6.jpg"},
+{"title":"Frosty the Snowman","year":1969,"image":"https://raw.githubusercontent.com/stunt456/GroovyChristmasImages/main/7.jpg"},
+{"title":"The Year Without a Santa Claus","year":1974,"image":"https://raw.githubusercontent.com/stunt456/GroovyChristmasImages/main/8.jpg"},
+{"title":"Jack Frost","year":1998,"image":"https://raw.githubusercontent.com/stunt456/GroovyChristmasImages/main/9.jpg"},
+{"title":"White Christmas","year":1954,"image":"https://raw.githubusercontent.com/stunt456/GroovyChristmasImages/main/10.jpg"},
+{"title":"Jingle All the Way","year":1996,"image":"https://raw.githubusercontent.com/stunt456/GroovyChristmasImages/main/11.jpg"},
+{"title":"Prancer","year":1989,"image":"https://raw.githubusercontent.com/stunt456/GroovyChristmasImages/main/12.jpg"},
+{"title":"Scrooged","year":1988,"image":"https://raw.githubusercontent.com/stunt456/GroovyChristmasImages/main/13.jpg"},
+{"title":"Christmas with the Kranks","year":2004,"image":"https://raw.githubusercontent.com/stunt456/GroovyChristmasImages/main/14.jpg"},
+{"title":"Deck the Halls","year":2006,"image":"https://raw.githubusercontent.com/stunt456/GroovyChristmasImages/main/15.jpg"},
+{"title":"Just Friends","year":2005,"image":"https://raw.githubusercontent.com/stunt456/GroovyChristmasImages/main/16.jpg"},
+{"title":"Ernest Saves Christmas","year":1988,"image":"https://raw.githubusercontent.com/stunt456/GroovyChristmasImages/main/17.jpg"},
+{"title":"Mr. Magoo's Christmas Carol","year":1962,"image":"https://raw.githubusercontent.com/stunt456/GroovyChristmasImages/main/18.jpg"},
+{"title":"It's A Wonderful Life","year":1946,"image":"https://raw.githubusercontent.com/stunt456/GroovyChristmasImages/main/19.jpg"},
+{"title":"National Lampoon's Christmas Vacation","year":1989,"image":"https://raw.githubusercontent.com/stunt456/GroovyChristmasImages/main/20.jpg"},
+{"title":"Miracle on 34th Street","year":1994,"image":"https://raw.githubusercontent.com/stunt456/GroovyChristmasImages/main/21.jpg"},
+{"title":"How the Grinch Stole Christmas","year":2000,"image":"https://raw.githubusercontent.com/stunt456/GroovyChristmasImages/main/22.jpg"},
+{"title":"A Charlie Brown Christmas","year":1965,"image":"https://raw.githubusercontent.com/stunt456/GroovyChristmasImages/main/23.jpg"},
+{"title":"Santa Claus is Coming to Town","year":1970,"image":"https://raw.githubusercontent.com/stunt456/GroovyChristmasImages/main/24.jpg"},
+{"title":"Batman Begins","year":2005,"image":"https://raw.githubusercontent.com/stunt456/GroovyChristmasImages/main/25.jpg"},
+{"title":"The Muppet Christmas Carol","year":1992,"image":"https://raw.githubusercontent.com/stunt456/GroovyChristmasImages/main/26.jpg"},
+{"title":"The Holiday","year":2006,"image":"https://raw.githubusercontent.com/stunt456/GroovyChristmasImages/main/27.jpg"},
+{"title":"Home Alone","year":1990,"image":"https://raw.githubusercontent.com/stunt456/GroovyChristmasImages/main/28.jpg"},
+{"title":"The Small One","year":1978,"image":"https://raw.githubusercontent.com/stunt456/GroovyChristmasImages/main/29.jpg"},
+{"title":"Mickey's Once Upon a Christmas","year":1999,"image":"https://raw.githubusercontent.com/stunt456/GroovyChristmasImages/main/30.jpg"}
+];
+
+// ================= GAME LOGIC =================
+const shuffle = a => a.sort(() => Math.random() - 0.5);
+const vibrate = p => navigator.vibrate && navigator.vibrate(p);
+
+let selectedMovies = [];
+let index = 0, zoom = 0, points = 10, totalScore = 0;
+let offsetX = 0, offsetY = 0, lastX = 0, lastY = 0;
+
+const img = document.getElementById('movie-image');
+const imgBox = document.getElementById('image-container');
+const options = document.getElementById('options');
+const zoomBtn = document.getElementById('zoom-out-btn');
+const score = document.getElementById('score-display');
+const overlay = document.getElementById('overlay');
+const overlayText = document.getElementById('overlay-text');
+const countdownEl = document.getElementById('countdown');
+
+function randomOffsetWithBias() {
+    const maxShift = 160 - zoom * 10;
+    const minDist = 80 - zoom * 5;
+    let tries = 0;
+    do {
+        offsetX = (Math.random() * 2 - 1) * maxShift;
+        offsetY = (Math.random() * 2 - 1) * maxShift;
+        tries++;
+    } while (Math.hypot(offsetX - lastX, offsetY - lastY) < minDist && tries < 20);
+    lastX = offsetX;
+    lastY = offsetY;
+}
+
+function updateZoom() {
+    img.style.transform =
+        `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px)) scale(${Math.max(1, 10 - zoom)})`;
+    score.textContent = `Possible: ${points} points`;
+    zoomBtn.textContent = `Zoom Out (${9 - zoom} left)`;
+    if (zoom >= 8) imgBox.classList.add('color');
+}
+
+function loadQuestion() {
+    zoom = 0; points = 10;
+    offsetX = offsetY = lastX = lastY = 0;
+    imgBox.classList.remove('color');
+    overlay.style.display = 'none';
+    zoomBtn.disabled = false;
+
+    const q = selectedMovies[index];
+    img.src = q.image;
+    updateZoom();
+
+    const correct = `${q.title} (${q.year})`;
+    const choices = shuffle([
+        correct,
+        ...shuffle(movieData.map(m => `${m.title} (${m.year})`).filter(t => t !== correct)).slice(0, 7)
+    ]);
+
+    options.innerHTML = '';
+    choices.forEach(c => {
+        const b = document.createElement('button');
+        b.className = 'option-btn';
+        b.textContent = c.split(' (')[0];
+        b.onclick = () => answer(b, c === correct);
+        options.appendChild(b);
+    });
+}
+
+function answer(btn, correct) {
+    if (btn.disabled) return;
+    if (correct) {
+        btn.classList.add('correct');
+        vibrate([50,50,100]);
+        totalScore += points;
+        end(`Correct! +${points}`);
+    } else {
+        btn.classList.add('incorrect');
+        btn.disabled = true;
+        vibrate([100,50,100]);
+        points = Math.max(0, points - 2);
+        zoom = Math.min(9, zoom + 1);
+        randomOffsetWithBias();
+        updateZoom();
+        if (points === 0) end(`Answer: ${selectedMovies[index].title}`);
+    }
+}
+
+function end(text) {
+    document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+    zoomBtn.disabled = true;
+    overlayText.textContent = text;
+    startCountdown();
+}
+
+function startCountdown() {
+    let c = 3;
+    overlay.style.display = 'flex';
+    countdownEl.textContent = c;
+    const t = setInterval(() => {
+        c--;
+        countdownEl.textContent = c;
+        if (c === 0) {
+            clearInterval(t);
+            index++;
+            index < selectedMovies.length ? loadQuestion() : finish();
+        }
+    }, 1000);
+}
+
+function finish() {
+    document.getElementById('quiz').classList.add('hidden');
+    document.getElementById('results').classList.remove('hidden');
+    document.getElementById('final-score').textContent =
+        `🎄 You scored ${totalScore} points! 🎄`;
+}
+
+zoomBtn.onclick = () => {
+    if (zoom < 9 && points > 0) {
+        zoom++; points--;
+        randomOffsetWithBias();
+        vibrate(30);
+        updateZoom();
+        if (points === 0) end(`Answer: ${selectedMovies[index].title}`);
+    }
+};
+
+document.getElementById('start-btn').onclick = () => {
+    selectedMovies = shuffle([...movieData]).slice(0, 25);
+    index = 0;
+    totalScore = 0;
+    document.getElementById('intro').classList.add('hidden');
+    document.getElementById('quiz').classList.remove('hidden');
+    loadQuestion();
+};
+</script>
+</body>
+</html>
