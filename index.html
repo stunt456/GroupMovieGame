@@ -548,7 +548,7 @@
         currentPoints -= 2;
         if (currentPoints < 0) currentPoints = 0;
         // Update status bar
-        document.getElementById('statusBar').textContent = `Question ${currentQuestion+1}/25 | Points: ${currentPoints} | Score: ${totalScore}`;
+        document.getElementById('statusBar').textContent = `Question ${currentQuestion+1}/50 | Points: ${currentPoints} | Score: ${totalScore}`;
         if (currentPoints <= 0) {
           // Out of points - reveal answer
           revealFullImage();
@@ -633,7 +633,7 @@
       currentPoints -= 1;
       if (currentPoints < 0) currentPoints = 0;
       // Update status bar
-      document.getElementById('statusBar').textContent = `Question ${currentQuestion+1}/25 | Points: ${currentPoints} | Score: ${totalScore}`;
+      document.getElementById('statusBar').textContent = `Question ${currentQuestion+1}/50 | Points: ${currentPoints} | Score: ${totalScore}`;
       zoomLevel = Math.max(0, zoomLevel - 1);
       const img = document.getElementById('movieImage');
       img.style.transformOrigin = zoomStates[zoomLevel].origin;
@@ -724,3 +724,4 @@
   </script>
 </body>
 </html>
+
